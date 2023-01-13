@@ -8,7 +8,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types
 import sqlite3 as sq
 
-token = '5825597732:AAHBXHXBxI3KqTtwXeyX31mmOlxfhZCXC1o'
+token = ''
 storage = MemoryStorage()
 
 
