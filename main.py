@@ -8,7 +8,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types
 import sqlite3 as sq
 
-token = ''
+token = '5825597732:AAHBXHXBxI3KqTtwXeyX31mmOlxfhZCXC1o'
 storage = MemoryStorage()
 
 
@@ -20,7 +20,7 @@ base.commit()
 
 bot = Bot(token=token)
 dp = Dispatcher(bot, storage=storage)
-b1 = KeyboardButton('города')
+b1 = KeyboardButton('/список')
 b2 = KeyboardButton('/добавить')
 b3 = KeyboardButton('/удалить')
 kb_client = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -39,7 +39,7 @@ async def commands_help(message: types.Message):
         f'а я бот справочник и могу тебе показать телефоны и города рекламных агенств для этого сейчас появится клавиаутура для ввода команд',
         reply_markup=kb_client)
 
-
+#добавление города
 class FSMAdmin(StatesGroup):
     city = State()
     phone = State()
@@ -69,20 +69,41 @@ async def add_phone(message: types.Message, state: FSMContext):
         phone = data['phone']
     cur.execute('INSERT INTO spisok VALUES(?,?);',(city,phone))
     base.commit()
-    #await message.reply(f'вы ввели город:{city} и номер {phone}')
+    await message.reply(f'вы добавили город: {city} и номер {phone}')
+    await state.finish()
+#Удаление города
+class FSMAdmin1(StatesGroup):
+    city = State()
+@dp.message_handler(commands="удалить", state=None)
+async def dl(message: types.Message):
+    await FSMAdmin1.city.set()
+    await message.reply('Введи название города')
+
+@dp.message_handler(state=FSMAdmin1.city)
+async def del_city(message:types.Message, state=FSMContext):
+    async with state.proxy() as data:
+        data["city"]=message.text
+    async with state.proxy() as data:
+        dcity = data['city']
+    cur.execute('DELETE FROM spisok WHERE city=?',(dcity,))
+    base.commit()
+    await message.reply(f'вы удалили запись: {dcity}')
     await state.finish()
 
-
+#выведение списка
 @dp.message_handler(commands="список")
 async def sql_read(message):
     for ret in cur.execute('SELECT* FROM spisok').fetchall():
         await bot.send_message(message.from_user.id,f'{ret[0]} {ret[1]}')
 
-
+#поиск города
 @dp.message_handler()
 async def find_city(message: types.Message):
     for cit in cur.execute('SELECT*FROM spisok WHERE city=?',(message.text.lower(),)).fetchone():
         await bot.send_message(message.from_user.id,cit)
+
+
+
 
 @dp.message_handler()
 async def echo_send(message: types.Message):
