@@ -99,8 +99,12 @@ async def sql_read(message):
 #поиск города
 @dp.message_handler()
 async def find_city(message: types.Message):
-    for cit in cur.execute('SELECT*FROM spisok WHERE city=?',(message.text.lower(),)).fetchone():
-        await bot.send_message(message.from_user.id,cit)
+    cur.execute('SELECT* FROM spisok WHERE city=?',(message.text.lower(),))
+    if cur.fetchone() is None:
+        await bot.send_message(message.from_user.id,'не такого города')
+    else:
+        for cit in cur.execute('SELECT*FROM spisok WHERE city=?',(message.text.lower(),)).fetchone():
+            await bot.send_message(message.from_user.id,cit)
 
 
 
