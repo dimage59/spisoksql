@@ -10,6 +10,7 @@ import sqlite3 as sq
 
 token = '5825597732:AAHBXHXBxI3KqTtwXeyX31mmOlxfhZCXC1o'
 storage = MemoryStorage()
+admin_id= 290662407
 
 
 base = sq.connect('spisok.db')
@@ -47,8 +48,11 @@ class FSMAdmin(StatesGroup):
 
 @dp.message_handler(commands='Добавить', state=None)
 async def add(message: types.Message):
-    await FSMAdmin.city.set()
-    await message.reply('Введи название города')
+    if message.from_user.id!=admin_id:
+        await bot.send_message(message.from_user.id,'доступ запрещен')
+    else:
+        await FSMAdmin.city.set()
+        await message.reply('Введи название города')
 
 
 
