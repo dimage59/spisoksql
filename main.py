@@ -16,7 +16,7 @@ admin_id= 290662407
 base = sq.connect('spisok.db')
 cur = base.cursor()
 print('db connected OK!')
-base.execute('CREATE TABLE IF NOT EXISTS spisok (city TEXT PRIMARY KEY,phone TEXT)')
+base.execute('CREATE TABLE IF NOT EXISTS spisok (city TEXT ,phone TEXT)')
 base.commit()
 
 bot = Bot(token=token)
@@ -24,21 +24,24 @@ dp = Dispatcher(bot, storage=storage)
 b1 = KeyboardButton('/список')
 b2 = KeyboardButton('/добавить')
 b3 = KeyboardButton('/удалить')
-kb_client = ReplyKeyboardMarkup(resize_keyboard=True)
-kb_client.add(b1).add(b2).add(b3)
+b4 = KeyboardButton('/города')
+kb_admin  = ReplyKeyboardMarkup(resize_keyboard=True)
+kb_admin.add(b1).add(b2).add(b3)
+kb_user= ReplyKeyboardMarkup(resize_keyboard=True)
+kb_user.add(b4)
 
 
 
 @dp.message_handler(commands=['start'])
 async def commands_start(message: types.Message):
-    await message.answer(f'приветствую тебя, @{message.from_user.id}.нажми /help чтобы узнать что я могу')
+    await message.answer(f'приветствую тебя, @{message.from_user.id}.нажми /help чтобы узнать что я могу',reply_markup=kb_user)
 
 
 @dp.message_handler(commands=['help'])
 async def commands_help(message: types.Message):
     await message.answer(
         f'а я бот справочник и могу тебе показать телефоны и города рекламных агенств для этого сейчас появится клавиаутура для ввода команд',
-        reply_markup=kb_client)
+        reply_markup=kb_admin)
 
 #добавление города
 class FSMAdmin(StatesGroup):
@@ -49,6 +52,7 @@ class FSMAdmin(StatesGroup):
 @dp.message_handler(commands='Добавить', state=None)
 async def add(message: types.Message):
     if message.from_user.id!=admin_id:
+        #await bot.answer_callback_query(callback_query_id=cmd.id, text="нет доступа", show_alert=True)
         await bot.send_message(message.from_user.id,'доступ запрещен')
     else:
         await FSMAdmin.city.set()
@@ -94,18 +98,23 @@ async def del_city(message:types.Message, state=FSMContext):
     await message.reply(f'вы удалили запись: {dcity}')
     await state.finish()
 
-#выведение списка
+#выведение списка с телефонами
 @dp.message_handler(commands="список")
 async def sql_read(message):
     for ret in cur.execute('SELECT* FROM spisok').fetchall():
         await bot.send_message(message.from_user.id,f'{ret[0]} {ret[1]}')
+#выведение списка
+@dp.message_handler(commands="города")
+async def sql_read(message):
+    for ret in cur.execute('SELECT city FROM spisok').fetchall():
+        await bot.send_message(message.from_user.id,f'{ret[0]}')
 
 #поиск города
 @dp.message_handler()
 async def find_city(message: types.Message):
     cur.execute('SELECT* FROM spisok WHERE city=?',(message.text.lower(),))
     if cur.fetchone() is None:
-        await bot.send_message(message.from_user.id,'не такого города')
+        await bot.send_message(message.from_user.id,'нет такого города')
     else:
         for cit in cur.execute('SELECT*FROM spisok WHERE city=?',(message.text.lower(),)).fetchone():
             await bot.send_message(message.from_user.id,cit)
